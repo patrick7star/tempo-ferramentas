@@ -1,4 +1,12 @@
 # temporizador-cronometro
+
+<!-- adicionando versões compátiveis. -->
+<h3> versões:&nbsp &nbsp
+<a href="https://github.com/TheAlgorithms/">
+    <img src="https://img.shields.io/pypi/pyversions/tomlkit.svg?logo=python&logoColor=white" height="15">
+</a>
+</h3>
+
 um programa simples feito em ´ncurses´ que dá duas funções de tempo importantes: crônometro e temporizador. Ambas podem ser ativadas via terminal, se nenhuma opção for escolhida, o temporizador é ativado por padrão.
 
 ## temporizador detalhes:
