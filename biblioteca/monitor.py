@@ -1,15 +1,17 @@
 # biblioteca padrão do Python:
 import curses, curses.ascii
+from curses import color_pair, A_BLINK, napms
 from time import gmtime, time, localtime
 import pprint
 # meus módulos:
-#from utilitarios import *
 from .utilitarios import *
 
 # o que pode ser importado.
-__all__ = ["TEMPO", "registros", "ContagemLimiteError",
-           "CronometroLimiteError","monitor_temporizador"
-           ,"monitor_cronometro"]
+__all__ = [
+   "TEMPO", "registros", "ContagemLimiteError",
+   "CronometroLimiteError","monitor_temporizador"
+   ,"monitor_cronometro"
+]
 
 # atributos básicos:
 LINHAS,COLUNAS = (0,0)
@@ -17,7 +19,7 @@ LINHAS,COLUNAS = (0,0)
 # ou de forma crescente.
 TEMPO = 120  # inicialmente dois minutos.
 # limite máximo do cronômetro é de um dia/24h.
-limite_cronometro = 24*3600
+limite_cronometro = 24 * 3600
 # lista de registros marcados durante a cronometragem.
 registros = []
 
@@ -25,13 +27,22 @@ registros = []
 # exceções do programa.
 class ContagemLimiteError(BaseException):
    def __str__(self):
-      return ("não se pode mais continuar a partir,\n"+
-             "daqui, pois ou a contagem estora a\n"+ 
-             "\"memória\" possível, ou vai para valores não físicos!")
+      return (
+         """não se pode mais continuar a partir,
+         \rdaqui, pois ou a contagem estora a
+         \r\"memória\" possível, ou vai para valores não físicos!"""
+      )
+   ...
+...
+
 class CronometroLimiteError(Exception):
    def __str__(self):
-      return ("o tempo máximo que tal 'contador' suporta"+
-            "\né um dia/24h, no formato 23:59:59")
+      return (
+         "o tempo máximo que tal 'contador' suporta"+
+         "\né um dia/24h, no formato 23:59:59"
+      )
+   ...
+...
 
 # computa dimensões de todas janelas.
 def obtem_dimensoes(J):
@@ -236,6 +247,42 @@ def contagem_crescente():
    return auxiliar
 
 
+# para horário e temporizador, uso em comum.
+def desenha_LED(janela, matriz, tempo):
+   em_segundos = (
+      3600 * tempo[0] + 
+      60 * tempo[1] + 
+      tempo[2]
+   )
+   for i in range(len(matriz)):
+      for j in range(len(matriz[0])):
+         (y, x) = (i+1, j+2)
+         cor = None
+         char = matriz[i][j]
+         if em_segundos < 10:
+            cor = 2
+         else:
+            cor = 1
+         janela.addch(y, x, char, color_pair(cor))
+      ...
+   ...
+...
+
+# exclusivo para o cronômetro.
+def desenhaLED(janela, matriz, em_segundos):
+   for i in range(len(matriz)):
+      for j in range(len(matriz[0])):
+         cor = None
+         (y, x) = (i+1, j+2)
+         char = matriz[i][j]
+         if em_segundos:
+            janela.addch(y, x, char, color_pair(2) | curses.A_BLINK)
+         else:
+            janela.addch(y, x, char, color_pair(1))
+      ...
+   ...
+...
+
 # tela que mostra e atualiza o relógio.
 def monitor_temporizador(janela):
    """ constrói uma interface gráfica de um 
@@ -262,6 +309,11 @@ def monitor_temporizador(janela):
    global TEMPO
    contador = contagem_regressiva(TEMPO)
    cronometro_ligado = False
+   dispara_horario = False 
+
+   # limpa tela antes de começar.
+   janela.erase()
+   janela.refresh()
 
    while tecla != ord('s'):
       tecla = janela.getch()
@@ -271,33 +323,29 @@ def monitor_temporizador(janela):
          janela.refresh()
       elif tecla == ord('c'):
          cronometro_ligado=True
-         janela.erase()
          janela_flutuante.erase()
-         janela.refresh()
          break
+      elif tecla == ord('h'):
+         dispara_horario = True
+         break
+      ...
 
       # apaga possível molde anterior.
       janela_flutuante.erase()  
       # matriz contendo molde selecionado.
       tempo = segundos_em_horario(contador())
       matriz = molde(janela_flutuante,tempo)
-      for i in range(len(matriz)):
-         for j in range(len(matriz[0])):
-            if 3600*tempo[0]+60*tempo[1]+tempo[2] < 10:
-               janela_flutuante.addch(i+1,j+2,
-                                     matriz[i][j], 
-                                  curses.color_pair(2))
-            else:
-               janela_flutuante.addch(i+1,j+2,
-                                     matriz[i][j], 
-                                  curses.color_pair(1))
+      desenha_LED(janela_flutuante, matriz, tempo)
       janela_flutuante.refresh() # atualiza após desenhar.
 
       # mensagem para sair.
-      barra_status(janela, '<S> sai do programa',
-                           '<N> nova contagem',
-                           '<C> conômetro')
+      barra_status(
+         janela, '<S> sai do programa',
+         '<N> nova contagem', '<C> conômetro',
+         '<H> horário'
+      )
       janela.refresh()
+   ...
 
    curses.endwin()  # fim da interface.
    
@@ -321,7 +369,9 @@ def monitor_temporizador(janela):
    # chama nova função do programa.
    if cronometro_ligado:
       curses.wrapper(monitor_cronometro)
-
+   if dispara_horario:
+      curses.wrapper(monitor_horario)
+...
 
 def monitor_cronometro(janela):
    """ constrói a interface gráfica do cronômetro
@@ -346,6 +396,11 @@ def monitor_cronometro(janela):
    contador = contagem_crescente()
    # acionou temporizador.
    temporizador_ligado=False
+   dispara_horario = False
+
+   # limpa tela antes de começar.
+   janela.erase()
+   janela.refresh()
 
    while tecla != ord('s'):
       # entrada para alguma tecla pressionada.
@@ -361,42 +416,183 @@ def monitor_cronometro(janela):
       elif tecla == ord('t'):
          temporizador_ligado=True
          janela_flutuante.erase()
-         janela.erase()
-         janela.refresh()
          janela_flutuante.refresh()
          break
+      elif tecla == ord('h'):
+         dispara_horario = True
+         break
+      ...
 
       janela_flutuante.erase()  # apaga possível molde anterior.
       # matriz contendo molde selecionado.
       tempo = segundos_em_horario(contador())
       matriz = molde_cronometro(janela_flutuante,tempo)
-      # proposições:
-      proposicao = abs(horario_em_segundos(tempo)-limite_cronometro) < 10
-      for i in range(len(matriz)):
-         for j in range(len(matriz[0])):
-            if proposicao:
-               janela_flutuante.addch(i+1, j+2, 
-                                     matriz[i][j], 
-                                     curses.color_pair(2)|curses.A_BLINK)
-            else:
-               janela_flutuante.addch(i+1, j+2, 
-                                     matriz[i][j], 
-                                     curses.color_pair(1))
+      desenhaLED(janela_flutuante, matriz, tempo)
       janela_flutuante.refresh() # atualiza após desenhar.
 
       # mensagem para sair.
-      barra_status(janela, '<S> sai do programa',
-                           '<R> resetar',
-                           '<M> marcar registro',
-                           '<T> temporizador')
+      barra_status(
+         janela, '<S> sai do programa',
+         '<R> resetar', '<M> marcar registro',
+         '<T> temporizador', '<H> horário'
+      )
+      # à cada meio segundo refresca tela.
+      napms(500)
       janela.refresh()  # refresca janela.
-
+   ...
    curses.endwin()  # fim da interface.
    for (ordem, T) in enumerate(registros):
-      print("%iª ==> %i:%i:%i"%(1+ordem, T[0],T[1],T[2]))
+      print(
+         "%iª ==> %2.2i:%2.2i:%2.2i"
+         %(1 + ordem, T[0],T[1],T[2])
+      )
 
    # se o temporizador foi acionado, então...
    if temporizador_ligado:
       curses.wrapper(monitor_temporizador)
+   elif dispara_horario:
+      curses.wrapper(monitor_horario)
+   ...
+...
+
+def molde_horario(sub_janela, tempo):
+   """ 
+   molde do temporizador; como será mostrador
+   ou, quando será mostrado os dígitos do 'relógio'.
+   """
+
+   horas = str(tempo[0])      # horas.
+   minutos = str(tempo[1])    # minutos.
+   segundos = str(tempo[2])   # segundos.
+
+   if len(horas) == 2:
+      hora_i = numero_desenho(int(horas[0]))
+      hora_ii = numero_desenho(int(horas[1]))
+   else:
+      hora_i = numero_desenho(0)
+      hora_ii = numero_desenho(int(horas[0]))
+
+   if len(minutos) == 2:
+      min_i = numero_desenho(int(minutos[0]))
+      min_ii = numero_desenho(int(minutos[1]))
+   else:
+      min_i = numero_desenho(0)
+      min_ii = numero_desenho(int(minutos[0]))
+
+   if len(segundos) == 2:
+      seg_i = numero_desenho(int(segundos[0]))
+      seg_ii = numero_desenho(int(segundos[1]))
+   else:
+      seg_i = numero_desenho(0)
+      seg_ii = numero_desenho(int(segundos[0]))
+
+   # removendo dígitos inúteis.
+   # convertendo tempo novamente em segundos.
+   T_seg = tempo[0]*3600 + tempo[1]*60 + tempo[2] 
+   if T_seg > 3600:
+      # se houver mais de uma hora deixa todos dígitos.
+      matriz = mescla_matrizes(
+         hora_i, hora_ii,
+         min_i, min_ii,
+         seg_i, seg_ii
+      )
+   elif 60 < T_seg < 3600:
+      # se não estiver na faixa das horas, corta
+      # o "dígito horas".
+      matriz = mescla_matrizes(
+         min_i, min_ii,
+         seg_i, seg_ii
+      )
+   else:
+      # se não estiver nem na faixa dos minutos
+      # então corta dos "dígitos" minutos e horas.
+      matriz = mescla_matrizes(seg_i, seg_ii)
    ...
 
+   (altura, largura) = (
+      len(matriz) + 1, 
+      len(matriz[0]) + 4
+   )
+   (Y, X) = (
+      (LINHAS - altura) / 2, 
+      (COLUNAS - largura) / 2
+   )
+   sub_janela.resize(altura, largura)
+   sub_janela.mvwin(int(Y),int(X))
+
+   # matriz contendo molde processado.
+   return matriz  
+...
+
+def monitor_horario(janela):
+   """
+   constrói uma interface para visualizar o 
+   horário atual.
+   """
+   # atualiza atual dimensão da janela.
+   obtem_dimensoes(janela)
+   curses.curs_set(False)  # oculta cursor do teclado.
+   janela.nodelay(True)   # não bloqueia com o input.
+   janela.keypad(True)  # ativa teclas especiais.
+
+   # paleta de cores.
+   curses.init_pair(1, curses.COLOR_GREEN, 0)
+   curses.init_pair(2, curses.COLOR_RED, 0)
+
+   # sub-janela; monitor do relógio.
+   janela_flutuante = curses.newwin(5,5)
+   janela_flutuante.keypad(True)
+   #janela_flutuante.clearok(True)
+   # para sair do programa.
+   tecla = janela.getch()
+   # programas a acionar:
+   dispara_temporizador = False
+   dispara_cronometro = False
+
+   while tecla != ord('s'):
+      tecla = janela.getch()
+      # alterna moldes do relógio.
+      if tecla == curses.KEY_RESIZE:
+         obtem_dimensoes(janela) # atualiza dimensões.
+         janela.refresh()
+      elif tecla == ord('t'):
+         dispara_temporizador = True
+         break
+      elif tecla == ord('c'):
+         dispara_cronometro = True
+         break
+      ...
+
+      # apaga possível molde anterior.
+      janela_flutuante.erase()  
+      # matriz contendo molde selecionado.
+      horario = gmtime(time())
+      tempo = (
+         horario.tm_hour,
+         horario.tm_min,
+         horario.tm_sec
+      )
+      matriz = molde_horario(janela_flutuante, tempo)
+      desenha_LED(janela_flutuante, matriz, tempo)
+      # atualiza após desenhar.
+      janela_flutuante.refresh() 
+
+      # mensagem para sair.
+      barra_status(
+         janela, '<S> sai do programa',
+         '<T> temporizador', '<C> conômetro',
+         '<F> formato'
+      )
+      janela.refresh()
+   ...
+   # fim da interface.
+   curses.endwin() 
+
+   # possívelmente inicial novo programa.
+   if dispara_cronometro:
+      curses.wrapper(monitor_cronometro)
+   elif dispara_temporizador:
+      curses.wrapper(monitor_temporizador)
+   else:
+      print("apenas abandonou o programa.")
+...
