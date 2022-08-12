@@ -59,7 +59,7 @@ for (opcao, valor) in conteudo[0]:
       wrapper(BM.monitor_cronometro)
       break
    
-   elif opcao == '--horario' or opcao == '-h':
+   elif opcao == '--horario' or opcao == '-H':
       wrapper(BM.monitor_horario)
       break
 
