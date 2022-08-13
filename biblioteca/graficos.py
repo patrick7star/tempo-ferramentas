@@ -2,26 +2,36 @@
 
 # biblioteca do Python:
 from curses import *
-#from .python_utilitarios.utilitarios.texto import constroi_str
 from biblioteca.python_utilitarios.utilitarios import texto
+from sys import stderr
 
+# margem de cada seção da LED.
+MARGEM = 5
+# largura e altura padrão da LED.
+LARGURA = 19
+ALTURA = 8
 
 class LED:
    def __init__(self, janela, horas, minutos, segundos):
-      (lin, col) = janela.getmaxyx()
+      (max_Y, max_X) = janela.getmaxyx()
       # posições centralizadoras:
-      meio_y = lin // 2 - 5
-      meio_x = col // 2
+      y = max_Y // 2 - ALTURA//2
+      x = max_X // 2 - (3*LARGURA + 2*MARGEM)//2
 
-      self._hour = newwin(8, 20, meio_y, 0)
-      self._min  = newwin(8, 20, meio_y, 20)
-      self._sec  = newwin(8, 20, meio_y, 40)
+      # sub-janelas de cada peso na contagem
+      # do "horário".
+      self._hour = newwin(ALTURA, LARGURA, y, x)
+      x += LARGURA + MARGEM
+      self._min = newwin(ALTURA, LARGURA, y, x)
+      x += LARGURA + MARGEM
+      self._sec = newwin(ALTURA, LARGURA, y, x)
 
       # valores atuais.
       self._hora_atual = horas
       self._minuto_atual = minutos
 
       # construindo uma tela inicial.
+      self._desenha_delimitador(janela)
       self._tela_inicial(horas, minutos, segundos)
    ...
 
@@ -57,20 +67,55 @@ class LED:
       self._sec.refresh()
       napms(500)
    ...
+
+   def _desenha_delimitador(self, janela):
+      delimitador = texto.constroi_str(':')
+      (max_Y, max_X) = janela.getmaxyx()
+      # posições centralizadoras:
+      yM = max_Y // 2 - ALTURA//2
+      xM = max_X // 2 - (3*LARGURA + 2*MARGEM)//2
+      # incrementos para 'x' e 'y'.
+      incremento_y = ALTURA//3
+      incremento_x = LARGURA + MARGEM//2
+      # recuando posições dos delimitadores
+      # verticalmente e horizontalmente ...
+      xM += incremento_x-1
+      yM += incremento_y-1
+      add_mt(janela, yM, xM, delimitador)
+      # pula a parte do LED central.
+      xM += incremento_x + 3
+      add_mt(janela, yM, xM, delimitador)
+      # NOTA: Como nada é perfeito, foi ajustado
+      # manulamente, acrescentando e decrementando,
+      # com literais, os incrementos.¨\(´-´)/¨
+   ...
 ...
 
+# um "pseudo-método" assim como todos os 
+# existentes na 'lib' curses, porém este
+# ao invés de strings e caractéres, desenha
+# "matrizes-texto" na tela, dado a posição,
+# e, é claro, a "matriz".
+def add_mt(janela, y, x, matriz_texto, atributo=None):
+   (altura, largura) = matriz_texto.dimensao()
+   for lin in range(altura):
+      for col in range(largura):
+         char = matriz_texto[lin][col]
+         try:
+            if atributo is not None:
+               janela.addch(y+lin, x+col, char, atributo)
+            else:
+               janela.addch(y+lin, x+col, char)
+         except:
+            pass
+      ...
+   ...
+...
 
 def desenha_janela(janela, matriz):
    (max_Y, max_X) = matriz.dimensao()
    # limpa janela primeiramente.
    janela.erase()
-   # desenha novo valor.
-   for y in range(max_Y):
-      for x in range(max_X):
-         char = matriz[y][x]
-         try:
-            janela.addch(y, x, char)
-         except: pass
-      ...
-   ...
+   add_mt(janela, 0, 0, matriz, atributo=color_pair(1))
 ...
+
