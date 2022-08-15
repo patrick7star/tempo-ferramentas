@@ -139,24 +139,22 @@ def barra_status(janela, *strings):
 
 
 def segundos_em_horario(T):
-   """ pega um tempo passado em segundos e o
+   """ 
+   pega um tempo passado em segundos e o
    converte para o formato de hora, posteriormente
    retorna uma tupla contendo todos seus 'inteiros'
    como, o primeiro elemento sendo as horas, o
-   segundo os minutos, e o terceiro os segundos."""
-   # quantas grupos de "hora" posso
-   # arranjar todos estes segundos.
-   horas = T/3600
-   # tirando a parte fracionária das horas,
-   # e, contabilizando em minutos.
-   minutos = abs(int(horas)-(T/3600)) * 60
-   # tirando a parte fracionária dos minutos
-   # e contabilizando-o em segundos.
-   segundos = abs(int(minutos)-minutos) * 60
-
-   # convertendo todas contagens para inteiros.
-   return (int(horas),int(minutos), int(segundos))
-
+   segundo os minutos, e o terceiro os segundos.
+   """
+   return (
+      # horas:
+      T // 3600,
+      # minutos:
+      (T % 3600) // 60,
+      # segundos:
+      (T % 3600) % 60
+   )
+...
 
 def horario_em_segundos(H):
    """ pega a tupla contendo três valores, horas
@@ -166,24 +164,26 @@ def horario_em_segundos(H):
 
 
 def contagem_regressiva(tempo):
-   """ uma 'bound function' que armazena o valor
+   """ 
+   uma 'bound function' que armazena o valor
    inicial dado em segundos e, em cada chamada
    verifica se a contagem chegou à zero;o retorno
    sempre é o atual valor da contagem, e se passado
-   de tal, levanta uma exceção terminando o programa. """
+   de tal, levanta uma exceção terminando o programa. 
+   """
    # marca um tempo inicial à partir
    # da primeira chamada feita.
    # marca argumento passado para
-   tempo_inicial = time()
+   tempo_inicial = int(time())
    # próximas chamadas da função.
    tempo = tempo + tempo_inicial
 
    def func():
       # baseado no tempo de próximas chamadas,
       # computa a diferença restante.
-      restante = tempo-time()
+      restante = tempo - int(time())
       if restante >= 0:
-         return abs(tempo-time())
+         return abs(tempo-int(time()))
       else:
          # quando termina uma contagem, sobre
          # uma exceção para terminar o programa.
@@ -191,7 +191,7 @@ def contagem_regressiva(tempo):
 
    # diferença restante.
    return func
-
+...
 
 def contagem_crescente():
    """ uma função que armazena informação de um
@@ -214,7 +214,7 @@ def contagem_crescente():
       else:
          raise CronometroLimiteError()
    return auxiliar
-
+...
 
 # para horário e temporizador, uso em comum.
 def desenha_LED(janela, matriz, tempo):
@@ -252,10 +252,6 @@ def monitor_temporizador(janela):
    curses.init_pair(1, curses.COLOR_GREEN, 0)
    curses.init_pair(2, curses.COLOR_RED, 0)
 
-   # sub-janela; monitor do relógio.
-   janela_flutuante = curses.newwin(5,5)
-   janela_flutuante.keypad(True)
-   #janela_flutuante.clearok(True)
    # para sair do programa.
    tecla = janela.getch()
    # função temporizadora, dado um valor
@@ -265,9 +261,16 @@ def monitor_temporizador(janela):
    cronometro_ligado = False
    dispara_horario = False
 
-   # limpa tela antes de começar.
-   janela.erase()
-   janela.refresh()
+   # sub-janela; monitor do relógio.
+   tempo = segundos_em_horario(contador()) 
+   if tempo[1] == 0:
+      h = None
+   else:
+      h = tempo[1]
+   if m:=tempo[2] == 0:
+      m = None
+   s = tempo[2]
+   janela_flutuante = graficos.LED_II(janela, h, m, s)
 
    while tecla != ord('s'):
       tecla = janela.getch()
@@ -277,20 +280,14 @@ def monitor_temporizador(janela):
          janela.refresh()
       elif tecla == ord('c'):
          cronometro_ligado=True
-         janela_flutuante.erase()
          break
       elif tecla == ord('h'):
          dispara_horario = True
          break
       ...
 
-      # apaga possível molde anterior.
-      janela_flutuante.erase()
-      # matriz contendo molde selecionado.
       tempo = segundos_em_horario(contador())
-      matriz = molde(janela_flutuante,tempo)
-      desenha_LED(janela_flutuante, matriz, tempo)
-      janela_flutuante.refresh() # atualiza após desenhar.
+      janela_flutuante(tempo[2], tempo[1], tempo[0])
 
       # mensagem para sair.
       barra_status(
@@ -340,9 +337,6 @@ def monitor_cronometro(janela):
    curses.init_pair(1, curses.COLOR_GREEN, 0)
    curses.init_pair(2, curses.COLOR_RED, 0)
 
-   # sub janela; monitor do relógio.
-   janela_flutuante = curses.newwin(5,5)
-   janela_flutuante.keypad(True)
    #janela_flutuante.clearok(True) # para sair do programa.
    tecla = janela.getch()
    # função temporizadora, dado um valor
@@ -352,11 +346,7 @@ def monitor_cronometro(janela):
    temporizador_ligado=False
    dispara_horario = False
 
-   # limpa tela antes de começar.
-   janela.erase()
-   janela.refresh()
-
-   janela_flutuante = graficos.LED(janela, 0, 0, 0)
+   janela_flutuante = graficos.LED(janela, 0, 20, 0)
 
    while tecla != ord('s'):
       # entrada para alguma tecla pressionada.
@@ -386,9 +376,6 @@ def monitor_cronometro(janela):
          '<R> resetar', '<M> marcar registro',
          '<T> temporizador', '<H> horário'
       )
-      # à cada meio segundo refresca tela.
-      #napms(500)
-      #janela.refresh()  # refresca janela.
    ...
    curses.endwin()  # fim da interface.
    for (ordem, T) in enumerate(registros):
@@ -404,7 +391,6 @@ def monitor_cronometro(janela):
       curses.wrapper(monitor_horario)
    ...
 ...
-
 
 def monitor_horario(janela):
    """

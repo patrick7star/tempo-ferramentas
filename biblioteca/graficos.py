@@ -119,3 +119,131 @@ def desenha_janela(janela, matriz):
    add_mt(janela, 0, 0, matriz, atributo=color_pair(1))
 ...
 
+class UmLED:
+   def __init__(self, y, x, valor_inicial):
+      self._atual = valor_inicial
+      self._janela = newwin(ALTURA, LARGURA, y, x)
+      self.posicao = (y, x)
+   ...
+
+   def __call__(self, novo_valor):
+      if self._atual == novo_valor:
+         return False 
+      self._atual = novo_valor
+      molde = "%2.2i" % novo_valor
+      matriz = constroi_str(molde)
+      desenha_janela(self._janela, matriz)
+      self._janela.refresh()
+      return True
+   ...
+...
+
+class LEDs:
+   def __init__(self, janela, horas, minutos, segundos):
+      (max_Y, max_X) = janela.getmaxyx()
+      (self.max_X, self.max_Y) = (max_X, max_Y)
+      # posições centralizadoras:
+      y = max_Y // 2 - ALTURA//2
+      x = max_X // 2 - (3*LARGURA + 2*MARGEM)//2
+
+      # construindo uma tela inicial.
+      #self._desenha_delimitador(janela)
+      # sub-janelas de cada peso na contagem
+      # do "horário".
+      if horas is not None:
+         x = max_X // 2 - (3*LARGURA + 2*MARGEM)//2
+         self._hour = newwin(ALTURA, LARGURA, y, x)
+         x += LARGURA + MARGEM
+         self._atualiza_hora(horas)
+      else:
+         self._hour = None
+      ...
+      self._hora_atual = horas
+
+      if minutos is not None:
+         x = max_X // 2 - (2*LARGURA + MARGEM)//2
+         self._min = newwin(ALTURA, LARGURA, y, x)
+         x += LARGURA + MARGEM
+         self._atualiza_minuto(minutos)
+      else:
+         self._min = None
+      ...
+      self._minuto_atual = minutos
+      # desenho inicial.
+      self._sec = newwin(ALTURA, LARGURA, y, x)
+      self._atualiza_segundo(segundos)
+      janela.refresh()
+   ...
+
+   def _atualiza_hora(self, hora):
+      # abandona a função.
+      if self._hour is None:
+         if __debug__:
+            from sys import stderr
+            print("sem display hora!", file=stderr)
+         return None
+      matriz = texto.constroi_str("%2.2i"% hora)
+      desenha_janela(self._hour, matriz)
+      self._hour.refresh()
+   ...
+
+   def _atualiza_minuto(self, minuto):
+      if self._min is None:
+         if __debug__:
+            print("sem display minutos!")
+         return None
+      matriz = texto.constroi_str("%2.2i"% minuto)
+      desenha_janela(self._min, matriz)
+      self._min.refresh()
+   ...
+
+   def _atualiza_segundo(self, segundo):
+      # executa sempre o desenha na seção do LED.
+      matriz = texto.constroi_str("%2.2i"% segundo)
+      desenha_janela(self._sec, matriz)
+      self._sec.refresh()
+   ...
+
+   def __call__(self, hora, minuto, segundo):
+      # se tais seções do LED estão ativados.
+      hora_existe = self._hour is not None
+      minuto_existe = self._min is not None
+
+      if hora_existe:
+         if self._hora_atual != hora:
+            self._atualiza_hora(hora)
+      ...
+      if minuto_existe:
+         if self._minuto_atual != minuto:
+            self._atualiza_minuto(minuto)
+      ...
+      self._atualiza_segundo(segundo)
+      napms(500)
+   ...
+
+   def _desenha_delimitador(self, janela):
+      delimitador = texto.constroi_str(':')
+      (max_Y, max_X) = janela.getmaxyx()
+      # incrementos para 'x' e 'y'.
+      incremento_y = ALTURA//3
+      incremento_x = LARGURA + MARGEM//2
+
+      # posições centralizadoras:
+      yM = max_Y // 2 - ALTURA//2
+      if self._hour is not None:
+         xM = max_X // 2 - (3*LARGURA + 2*MARGEM)//2
+         # recuando posições dos delimitadores
+         # verticalmente e horizontalmente ...
+         xM += incremento_x-1
+         yM += incremento_y-1
+         add_mt(janela, yM, xM, delimitador)
+      ...
+      if self._min is not None:
+         # pula a parte do LED central.
+         xM = max_X // 2 - (2*LARGURA + MARGEM)//2
+         xM += incremento_x + 3
+         add_mt(janela, yM, xM, delimitador)
+      ...
+   ...
+...
+
