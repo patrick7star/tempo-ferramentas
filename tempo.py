@@ -54,19 +54,12 @@ for (opcao, valor) in conteudo[0]:
    if opcao == '--temporizador' or opcao == '-t':
       BM.TEMPO = int(valor)
       wrapper(BM.monitor_temporizador)
-      break
-
    elif opcao == '--cronômetro' or opcao == '-c':
       wrapper(BM.monitor_cronometro)
-      break
-
-   elif opcao == '--horario' or opcao == '-H':
+   elif opcao == '--horário' or opcao == '-H':
       wrapper(BM.monitor_horario)
-      break
-
    elif opcao == '--ajuda' or opcao == '-h':
       print(ajuda)
-      break
 else:
    # se nenhum argumento for detectado apenas aciona
    # o temporizador, já que é possível alterna entre
