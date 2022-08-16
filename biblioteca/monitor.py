@@ -1,6 +1,7 @@
 # biblioteca padrão do Python:
 import curses, curses.ascii
 from curses import color_pair, A_BLINK, napms
+from time import localtime, time
 # meus módulos:
 import biblioteca.graficos as graficos
 from .tempo_utilitarios import *
@@ -82,6 +83,14 @@ def monitor_temporizador(janela):
    janela_flutuante = graficos.LEDs(janela, h, m, s)
    janela_flutuante.esboca_delimitadores(janela)
 
+   # instruções na barra de status.
+   # mensagem para sair.
+   barra_status(
+      janela, '<S> sai do programa',
+      '<N> nova contagem', '<C> conômetro',
+      '<H> horário'
+   )
+
    while tecla != ord('s'):
       tecla = janela.getch()
       # alterna moldes do relógio.
@@ -96,15 +105,13 @@ def monitor_temporizador(janela):
          break
       ...
 
-      tempo = segundos_em_horario(contador())
-      janela_flutuante(*tempo)
-
-      # mensagem para sair.
-      barra_status(
-         janela, '<S> sai do programa',
-         '<N> nova contagem', '<C> conômetro',
-         '<H> horário'
-      )
+      try:
+         tempo = segundos_em_horario(contador())
+      except ContagemLimiteError:
+         print("o 'contador' está esgotado!")
+         break
+      finally:
+         janela_flutuante(*tempo)
    ...
 
    curses.endwin()  # fim da interface.
@@ -159,6 +166,12 @@ def monitor_cronometro(janela):
 
    # limpando a tela para renovação:
    janela.erase()
+   # mensagem para sair.
+   barra_status(
+      janela, '<S> sair',
+      '<R> resetar', '<M> marcar registro',
+      '<T> temporizador', '<H> horário'
+   )
    janela.refresh()
    janela_flutuante = graficos.LEDs(janela, 0, 0, 0)
    janela_flutuante.esboca_delimitadores(janela)
@@ -184,13 +197,6 @@ def monitor_cronometro(janela):
 
       tempo = segundos_em_horario(contador())
       janela_flutuante(*tempo)
-
-      # mensagem para sair.
-      barra_status(
-         janela, '<S> sai do programa',
-         '<R> resetar', '<M> marcar registro',
-         '<T> temporizador', '<H> horário'
-      )
    ...
    curses.endwin()  # fim da interface.
    for (ordem, T) in enumerate(registros):
@@ -224,6 +230,12 @@ def monitor_horario(janela):
 
    # limpando a tela para renovação:
    janela.erase()
+   # mensagem para sair.
+   barra_status(
+      janela, '<S> sai do programa',
+      '<T> temporizador', '<C> conômetro',
+      '<F> formato'
+   )
    janela.refresh()
    # sub-janela; monitor do relógio.
    janela_flutuante = graficos.LEDs(janela, 0, 0, 0)
@@ -256,12 +268,6 @@ def monitor_horario(janela):
          horario.tm_sec
       )
       janela_flutuante.esboca_delimitadores(janela)
-      # mensagem para sair.
-      barra_status(
-         janela, '<S> sai do programa',
-         '<T> temporizador', '<C> conômetro',
-         '<F> formato'
-      )
    ...
    # fim da interface.
    curses.endwin()
