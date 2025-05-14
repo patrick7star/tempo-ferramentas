@@ -31,23 +31,31 @@ from os.path import join, abspath, dirname, exists
 import enum
 from pathlib import Path
 
-# Importando...
+# Tentando importar...
 #import barra_de_progresso(descontinuado)
-import src.progresso as progresso
-import src.impressao as impressao
-import src.espiral as espiral
-import src.legivel as legivel
-import src.romanos as romanos
-# Sendo renomeada com a versão otimizada, pelo menos até o momento.
-import src.tela as tela
-import src.arvore as arvore
-import src.extenso as extenso
-import src.impressao as impressao
-#import src.tabelas as tabelas
-import src.texto as texto
-import src.tempo as tempo
-# Não usado muito, então dado como descontinuado.
-import src.aritimetica as aritimetica
+try:
+   import src.progresso as progresso
+   import src.impressao as impressao
+   import src.espiral as espiral
+   import src.romanos as romanos
+   # Sendo renomeada com a versão otimizada, pelo menos até o momento.
+   import src.tela as tela
+   import src.arvore as arvore
+   import src.extenso as extenso
+   import src.impressao as impressao
+   #import src.tabelas as tabelas
+   import src.tempo as tempo
+   # Não usado muito, então dado como descontinuado.
+   import src.aritimetica as aritimetica
+except ModuleNotFoundError:
+   print("Provavelmente o módulo não foi encontrado por que isso é uma " +
+      "biblioteca externa, e pra reduzir a cadeia de árquivos ele foi " +
+      "bastante reduzido, ao menos aqueles arquivos(módulos) que não " + 
+      "tem depedencia de cadeia"
+   )
+finally:
+   import src.legivel as legivel
+   import src.texto as texto
 
 # Computa o tipo de dado que é o objeto passado, por exemplo: Classe, 
 # Função, Enum, Variável e etc. Retorna uma string informando o tipo.
